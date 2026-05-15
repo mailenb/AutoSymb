@@ -1,0 +1,214 @@
+Test specification {
+    syntax {
+        program-syntax {
+            p
+            : p ';' p           # Seq 
+            | 'do' p            # Do
+            | 'Skip'            # Skip
+            | 'let' x ':=' Expr # Let
+            | x ':=' Expr       # Asg
+            | b                 # b
+            | 'if' BExpr '{' p '}' '{' p '}' # IF
+            | p '++' p   #  More 
+            | cl         # One
+            | /(a|b)+/   # AB
+            ;
+
+            cl : 'c'  # C ;
+
+            b
+            : 'while' BExpr '{' p '}'  # WHILE
+            | 'when' BExpr 'do' '{' p '}' '||' '{' p '}'  # When
+            ;
+        }
+
+        variable-syntax {
+            x : u # Upper | l #Lower ;
+            u : /[A-Z][A-Z0-9_']*/ # U;
+            l : /[a-z][a-z0-9_']*/ #L;
+            
+            {- x 
+            : [D] datatype  
+            | [C] classes 
+            | [V] var
+            | [F] /[a-zA-Z][a-zA-Z0-9_']*/ -- functions
+            ;
+
+            var       : [Var]   /[a-zA-Z][a-zA-Z0-9_']*/ ; 
+            datatype  : [Data]  /[A-Z][a-zA-Z0-9_']*/ ; 
+            classes   : [Class] /[A-Z][a-zA-Z]*/ ; 
+            -}
+
+            -- x : [ID] /[a-zA-Z][a-zA-Z0-9_']*/ ;
+        }
+    }
+
+    semantics {
+
+        rule do [Do] {
+            premises   { (p1, a1) => (program1', a1') }
+            conclusion { (do p1, a1) => (program1', a1') }
+        }
+
+        rule skip [Skip] {
+            conclusion { (Skip, a') => (end, a') }
+        }
+
+        {- 
+            rule assign [Asg] {
+            conclusion { (Skip, a) => (end, a) }
+            }
+
+            rule assign [Asg] {
+            conclusion { (x1 := e1, a) => (end, a[ x1 |-> a(e1)]) }
+            }
+    
+            rule seq_0 [Seq] {
+                premises   { (p1,      a) => (end, a1') }
+                conclusion { (p1 ; p2, a) => (p2,  a1') }
+            }
+
+        -}
+
+        -- Let
+        rule let [Let] {
+            conclusion { (let variable := exp, a1) => (variable := exp, a1) }
+        }
+
+        rule assign [Asg] {
+            conclusion { (variable := exp, a1) => (end, a1[ variable |-> a1(exp)]) }
+        }
+
+
+        rule seq_0 [Seq] {
+            premises   { (x,     s) => (end, s1) }
+            conclusion { (x ; y, s) => (y,   s1) }
+        }
+
+        rule seq_n [Seq] {
+            premises   { (p1,      a1) => (program1',     a1') }
+            conclusion { (p1 ; p2, a1) => (program1' ; p2, a1') }
+        }
+    
+        -- | [When] 'when' BExpr 'do' '{' p '}' '||' '{' p '}' 
+        rule when_T_both [When] {
+            trigger    { b1 }
+            premises   { (program1, a) => (p1', a1')
+                         (p2, a) => (p2', a2''') }
+            conclusion { (when b1 do { program1 }  || { p2 }, a) 
+                      => (when b1 do { p1' } || { p2' }, a1') }
+        }
+
+        rule when_F_both [When] {
+            trigger    { !bool }
+            premises   { (z,  st)  => (z1, a2')
+                         (prog1, st)  => (p1', a1')
+                        }
+            conclusion { (when bool do { prog1 } || { z }, st) 
+                      => (end, st) }
+        }
+
+        rule when_p1_T [When] {
+            trigger    { b1 }
+            premises   { (p1, a) => (p1', a1')
+                         (p2, a) => (end, a2') }
+            conclusion { (when b1 do { p1 }  || { p2 }, a) 
+                      => (p1', a1') }
+        }
+
+        rule when_p1_F [When] {
+            trigger    { !b1 }
+            premises   { (p1, a) => (p1', a1')
+                         (p2, a) => (end, a2') }
+            conclusion { (when b1 do { p1 }  || { p2 }, a) 
+                      => (end, a) }
+        }
+
+        
+        rule when_p2_T [When] {
+            trigger    { b1 }
+            premises   { (p2, a) => (p2', a2')
+                         (p1, a) => (end, a1') }
+            conclusion { (when b1 do { p1 }  || { p2 }, a) 
+                      => (p2', a2') }
+        }
+        
+        rule when_p2_F [When] {
+            trigger    { !b1 }
+            premises   { (p1, a) => (end, a1')
+                         (p2, a) => (p2', a2') }
+            conclusion { (when b1 do { p1 }  || { p2 }, a) 
+                      => (end, a) }
+        }
+        
+        rule when_done_T [When] {
+            trigger    { b1 }
+            premises   { (p1, a) => (end, a1')
+                         (p2, a) => (end, a2') }
+            conclusion { (when b1 do { p1 }  || { p2 }, a) 
+                      => (end, a1') }
+        }
+
+        rule when_done_F [When] {
+            trigger    { !b1 }
+            premises   { (p1, a) => (end, a1')
+                         (p2, a) => (end, a2') }
+            conclusion { (when b1 do { p1 }  || { p2 }, a) 
+                      => (end, a) }
+        }
+
+        {- rule if_T [IF] {
+            trigger { b1 }
+            conclusion { (if b1 { p1 } { p2 }, a) => (p1, a) }
+        }
+
+        -}
+
+        -- | [One] 'c' | [More] 'c' ',' p
+
+        rule more [More] {
+             conclusion { (p1 ++ p2, a1) => (p2, a1) }
+        }
+        rule c [C] {
+             conclusion { (c, a1) => (end, a1) }
+        }
+
+        rule if_T [IF] {
+            trigger { boool }
+            conclusion { (if boool { program } { p3 }, a) => (program, a) }
+        }
+
+        rule if_F [IF] {
+            trigger { !b1 } 
+            conclusion { (if b1 { p1 } { p2 }, a) => (p2, a) }
+        }
+
+
+        rule while_T [WHILE] {
+            trigger { guard }
+            conclusion { (while guard { prog }, state) => (prog ; while guard { prog }, state) } 
+        }
+        rule while_F [WHILE] {
+            trigger { ! b11 } 
+            conclusion { (while b11 { p11 }, a1) => (end, a1) }
+        }
+
+
+        -- | [AB]  /(a|b)+/
+        rule ab [AB] {
+             conclusion { (ab, a1) => (end, a1) }
+        }
+
+        {- rule do [Do] [
+            conclusion {(do program, a1) => (program, a1)}
+        ]
+        -}
+
+        rule do_end [Do] {
+            premises   { (x, state1111)    => (end, state11111) }
+            conclusion { (do x, state1111) => (end, state11111) }
+        }
+
+
+    }
+}

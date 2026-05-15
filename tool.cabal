@@ -1,0 +1,60 @@
+cabal-version:      3.0
+name:               tool
+version:            0.1.0.0
+
+license:            MIT
+author:             Mailen Børmarken
+maintainer:         mailenb@uio.no
+
+category:           Language
+build-type:         Simple
+
+-- Extra doc files to be distributed with the package, such as a CHANGELOG or a README.
+extra-doc-files:    README.md
+
+-- Path of the specification to make the generetors automatically rebuild when the file changes
+extra-source-files: examples/casestudy2/while_extended.ssos
+
+common dependencies
+    build-depends:
+        base ^>=4.18.2.1,
+        containers,
+        megaparsec,
+        mtl,
+        parser-combinators,
+        text,
+        template-haskell,
+        regex-tdfa,
+        th-lift,
+        th-utilities,
+        Unique,
+        validation,
+        syb
+
+library
+    import: dependencies
+    exposed-modules:
+        MetaUtil
+        MetaParser
+        MetaInterpreter
+        Syntax 
+        Semantics
+        ParserSyntax
+        ParserSemantics
+        Normalize
+        Validate
+        Interpreter 
+        Runtime
+    hs-source-dirs: src
+    default-language: Haskell2010
+    default-extensions: OverloadedStrings
+    ghc-options: -ddump-splices -ddump-to-file
+
+executable tool
+    import:           dependencies
+    main-is:          Main.hs
+    hs-source-dirs:   app
+    build-depends:    tool
+    default-language: Haskell2010
+    default-extensions: OverloadedStrings
+    ghc-options: -ddump-splices -ddump-to-file

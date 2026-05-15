@@ -1,0 +1,55 @@
+Swap specification {
+    syntax {
+        variable-syntax {
+            x : /[A-Z][A-Z]*/ #Var ;
+        }
+
+        program-syntax {
+            p
+            : 'skip'      # Skip_1
+            | 'swap' x x  # Swap 
+            | x ':=' Expr # asg_  
+            | p ';' p     #s_e_q
+            | if          #b -- wrapper 
+            ;
+            
+            if : 'if' BExpr '{' p '}' '{' p '}' # if ;
+        }
+    }
+
+    semantics {
+        rule skip [Skip_1] {
+            conclusion { (skip, a) => (end, a) }
+        }
+
+        rule assign [asg_] {
+            conclusion { (X := E, a) => (end, a[ X |-> a(E)]) }
+        }
+
+        -- [Swap] 'swap' x x
+        rule assign [Swap] {
+            conclusion { (swap X Y, a) => (end, a[ X |-> a(Y)
+                                                 , Y |-> a(X) ]) }
+        }
+
+        rule seq_0 [s_e_q] {
+            premises   { (x,     a) => (end, a1) }
+            conclusion { (x ; y, a) => (y,   a1) }
+        }
+
+        rule seq_n [s_e_q] {
+            premises   { (p1,      a) => (p1',      a1') }
+            conclusion { (p1 ; p2, a) => (p1' ; p2, a1') }
+        }
+
+        rule if_T [if] {
+            trigger { B }
+            conclusion { (if B { p1 } { p2 }, a) => (p1, a) }
+        }
+
+        rule if_F [if] {
+            trigger { !B } 
+            conclusion { (if B { p1 } { p2 }, a) => (p2, a) }
+        }
+    }
+}

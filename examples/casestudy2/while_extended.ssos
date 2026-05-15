@@ -1,0 +1,104 @@
+WHILE specification {
+    syntax {
+        program-syntax {
+            p
+            : 'Skip'                         # Skip
+            | 'if' BExpr '{' p '}' '{' p '}' # If
+            | 'while' BExpr '{' p '}'        # While
+            | x ':=' Expr                    # Asg
+            | p '<<' p  # Interleaving
+            -- | p '\\/' p  # StepBranch
+            | '[' p ']' # Box
+            | p ';' p                        # Seq
+            ;
+        }
+
+        variable-syntax {
+            x : /[a-zA-Z][a-zA-Z0-9_']*/ # Id;
+        }
+    }
+
+    semantics {
+
+        -- 5.7.2: p '<<' p  # Interleaving
+        rule int_0 [Interleaving] {
+            premises   { (p     , s) => (end, s') }
+            conclusion { (p << q, s) => (q,   s') }
+        }
+
+        rule int_n [Interleaving] {
+            premises   { (p,      s) => (p',      s') }
+            conclusion { (p << q, s) => (q << p', s') }
+        }
+
+
+        {-
+        -- 5.7.3: p '\/' p  # StepBranch
+        rule step_0 [StepBranch] {
+            trigger { b }
+            premises   { (p     , s) => (p', s1) 
+                         (q     , s) => (q', s2) }
+            conclusion { (p \/ q, s) => (p' \/ q,  s1) }
+        }
+
+        rule step_n [StepBranch] {
+            trigger { b }
+            premises   { (p     , s) => (p', s1) 
+                         (q     , s) => (q', s2) }
+            conclusion { (p \/ q, s) => (p \/ q',  s2) }
+        }
+        -}
+
+        
+        -- 5.7.4: '[' p ']' # Box
+        rule box_0 [Box] {
+            premises   { (p,     s) => (end, s') }
+            conclusion { ([ p ], s) => (p  , s') }
+        }
+
+        rule box_n [Box] {
+            premises   { (p,     s) => (p',     s') }
+            conclusion { ([ p ], s) => ([ p' ], s') }
+        }
+
+
+        rule Skip [Skip] {
+            conclusion { (Skip, a) => (end, a) }
+        }
+
+        rule assign [Asg] {
+            conclusion { (x := e, a) => (end, a[ x |-> a(e)]) }
+        }
+    
+        rule seq_0 [Seq] {
+            premises   { (p1,      a) => (end, a1') }
+            conclusion { (p1 ; p2, a) => (p2,  a1') }
+        }
+
+        rule seq_n [Seq] {
+            premises   { (p1,      a1) => (p',      a1') }
+            conclusion { (p1 ; p2, a1) => (p' ; p2, a1') }
+        }
+       
+        rule if_T [If] {
+            trigger { b }
+            conclusion { (if b { p1 } { p2 }, a) => (p1, a) }
+        }
+
+        rule if_F [If] {
+            trigger { !b } 
+            conclusion { (if b { p1 } { p2 }, a) => (p2, a) }
+        }
+
+        rule while_T [While] {
+            trigger { b }
+            conclusion { (while b { p }, a) => (p ; while b { p }, a) } 
+        }
+
+        rule while_F [While] {
+            trigger { !b }
+            conclusion { (while b { p }, a) => (end, a) } 
+        }
+
+    }
+}

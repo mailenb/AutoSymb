@@ -1,0 +1,57 @@
+WHILE specification {
+    syntax {
+        program-syntax {
+            p
+            : 'Skip'                         # Skip
+            | 'if' BExpr '{' p '}' '{' p '}' # If
+            | 'while' BExpr '{' p '}'        # While
+            | x ':=' Expr                    # Asg
+            | p ';' p                        # Seq
+            ;
+        }
+
+        variable-syntax {
+            x : /[a-zA-Z][a-zA-Z0-9_']*/ # Id;
+        }
+    }
+
+    semantics {
+        rule Skip [Skip] {
+            conclusion { (Skip, a) => (end, a) }
+        }
+
+        rule assign [Asg] {
+            conclusion { (x := e, a) => (end, a[ x |-> a(e)]) }
+        }
+    
+        rule seq_0 [Seq] {
+            premises   { (p1,      a) => (end, a1') }
+            conclusion { (p1 ; p2, a) => (p2,  a1') }
+        }
+
+        rule seq_n [Seq] {
+            premises   { (p1,      a1) => (p',      a1') }
+            conclusion { (p1 ; p2, a1) => (p' ; p2, a1') }
+        }
+       
+        rule if_T [If] {
+            trigger { b }
+            conclusion { (if b { p1 } { p2 }, a) => (p1, a) }
+        }
+        
+        rule if_F [If] {
+            trigger { !b } 
+            conclusion { (if b { p1 } { p2 }, a) => (p2, a) }
+        }
+
+        rule while_T [While] {
+            trigger { b }
+            conclusion { (while b { p }, a) => (p ; while b { p }, a) } 
+        }
+
+        rule while_F [While] {
+            trigger { !b }
+            conclusion { (while b { p }, a) => (end, a) } 
+        }
+    }
+}

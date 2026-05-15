@@ -1,0 +1,9 @@
+
+-- A := 4 ;
+-- B := 6 ;
+
+swap B A ;
+
+if !(A = B) 
+    { A := A ; B := A + B + C } 
+    { skip }

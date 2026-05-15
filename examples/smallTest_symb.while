@@ -1,0 +1,36 @@
+if (x > 0 && y > 0) 
+    { x := 0 - x ; y := 0 - y ; z := -10 + -10}
+    { if (y = 0)
+        { xy := x * y }
+        { xy := x / y }
+    } ;
+
+if (T)
+    { 
+      if  := x    ; 
+      var2 := y / 1 
+    }
+
+    {  
+      {-
+				OBS: Although this branch contains a devision by zero runtime error, no error will be thrown,
+				as it is unreachable because the guard T is always true.
+
+				* Since the tool is built on Haskell, which uses lazy evaluation,
+				expressions in unreachable branches are never evaluated in the concrete interpreters,
+				and thus never throws an error.
+				
+				* The symbolic executor also discards all unsatisfiable branches, giving short-circuiting 
+				behavior, such as in programming languages like python and java.
+      -}
+        
+        var3 := 1 / 0 
+    } ; 
+
+
+-- counter
+while x < 5
+    { x := 5 } ;
+
+
+xy :=  (x * y) + x 
